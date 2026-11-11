@@ -1,1 +1,0 @@
-print("Testing version control from VSC")
