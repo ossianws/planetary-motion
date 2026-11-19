@@ -1,0 +1,63 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+def g_accel(r: np.ndarray, G: float = 6.67348e-11, M: float = 1.989e30) -> np.ndarray:
+    """
+    Gravitational acceleration of a body at position r with sun fixed at the origin
+    r: current position vector (numpy array)
+    Returns a = -GM r / |r|^3
+    """
+    return -G * M * r / np.linalg.norm(r)**3
+
+def next_r(r_k: np.ndarray, v_k: np.ndarray, dt: float) -> np.ndarray:
+    """
+    Velocity Verlet position update: r_(k+1) = r_k + v_k dt + 1/2a(r_k) dt^2
+    r_k: Current position vector of the body (numpy array)
+    v_k: Current velocity vector of the body (numpy array)
+    dt: Time step for the simulation, the smaller, the more accurate ((dt)^3 error) (float)
+    uses g_accel(r) for gravitational acceleration
+    """
+    return r_k + v_k * dt + 0.5 * g_accel(r_k) * dt**2
+
+def next_v(r_k: np.ndarray, r_k_plus_1: np.ndarray, v_k: np.ndarray, dt: float) -> np.ndarray:
+    """
+    Velocity Verlet velocity update: v_(k+1) = v_k + 1/2(a(r_k) + a(r_(k+1))) dt
+    r_k: Current position vector of the body (numpy array)
+    r_k_plus_1: Next position vector of the body (numpy array)
+    v_k: Current velocity vector of the body (numpy array)
+    dt: Time step for the simulation, the smaller the more accurate (float)
+    uses g_accel(r) for gravitational acceleration
+    """
+    return v_k + 0.5 * (g_accel(r_k) + g_accel(r_k_plus_1)) * dt
+
+R = 1.496e11  
+r_0 = R * np.array([1, 0])  # Initial position vector (1 AU from the Sun)
+v_0 = 29.8e3 * np.array([0, 1])  # Initial velocity vector (29.8km/s along +y direction)
+dt = 60 * 60 * 12 # Half a day as a time frame
+
+r, v = r_0, v_0
+positions = [r]
+velocities = [v]
+for i in range(730): #simulate for a year)
+    r_next = next_r(r, v, dt)  # Update position every half-day (43200 seconds)
+    v_next = next_v(r, r_next, v, dt)  # Update velocity every half-day (43200 seconds)
+    #print(f"Day {i+1}: Position = {r_next}, Velocity = {v_next}")
+    r = r_next  # Update the current position for the next iteration
+    v = v_next # Update the current velocity for the next iteration
+    positions.append(r)
+    velocities.append(v)
+
+# Convert positions to a numpy array for easier plotting
+plt.style.use('dark_background')
+
+positions = np.array(positions)
+velocities = np.array(velocities)
+plt.scatter(positions[:, 0] / R, positions[:, 1] / R, s=2)
+#plt.scatter(velocities[:, 0], velocities[:, 1], color='r', s=1)  # Plot the velocity vectors in red
+plt.plot(0, 0, 'yo', markersize=10)  # Plot the Sun at the origin
+plt.axis('equal')
+plt.title("Orbit of a Body Around the Sun")
+plt.xlabel("X Position (AU)")
+plt.ylabel("Y Position (AU)")
+plt.show()
